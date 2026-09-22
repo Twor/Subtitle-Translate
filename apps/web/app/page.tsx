@@ -41,15 +41,16 @@ const navigation = [
 ] as const
 
 const colorClasses = {
-  pink: "bg-[#ffc5c7]",
-  green: "bg-[#b6efc0]",
-  blue: "bg-[#b8dfff]",
-  yellow: "bg-[#ffed9e]",
-  mint: "bg-[#98ead1]",
+  pink: "bg-[#e6a9c5]",
+  green: "bg-[#9bc8a7]",
+  blue: "bg-[#83afd5]",
+  yellow: "bg-[#eed66d]",
+  mint: "bg-[#8bc9ad]",
 }
 
 const languages = ["English", "日本語", "한국어", "Français", "Deutsch", "Ελληνικά"]
 const interfaceLanguages = ["中文", "English"] as const
+const interfaceLanguageTabColors = ["bg-[#f6a6b8]", "bg-[#a9d49d]"] as const
 const DEFAULT_TRANSLATION_PROMPT = "You are a professional subtitle translator. Translate naturally and accurately while preserving meaning, tone, character voice, cultural context, and subtitle readability. Do not translate proper nouns inconsistently."
 const translationPrompt = process.env.NEXT_PUBLIC_DEEPSEEK_TRANSLATION_PROMPT?.trim() || DEFAULT_TRANSLATION_PROMPT
 
@@ -87,7 +88,6 @@ const uiText = {
 export default function Page() {
   const [interfaceLanguage, setInterfaceLanguage] = useState<(typeof interfaceLanguages)[number]>("中文")
   const [activeTab, setActiveTab] = useState("字幕")
-  const [languageOpen, setLanguageOpen] = useState(false)
   const [targetLanguage, setTargetLanguage] = useState("English")
   const [selectedRow, setSelectedRow] = useState(0)
   const [cues, setCues] = useState<SubtitleCue[]>(demoCues)
@@ -263,14 +263,14 @@ export default function Page() {
     <main className="relative min-h-svh overflow-hidden bg-[#bb8051] px-3 py-6 text-[#202020] sm:px-8 sm:py-10">
       <StudyBackdrop />
       <section className="relative z-10 mx-auto flex min-h-[calc(100svh-3rem)] w-full max-w-[1120px] flex-col items-stretch sm:min-h-[680px]">
-        <div className="mb-3 flex justify-end sm:ml-[70px] sm:w-[calc(100%-70px)]">
-          <Button type="button" variant="outline" onClick={() => setInterfaceLanguage((current) => current === "中文" ? "English" : "中文")} aria-label={uiText[interfaceLanguage].language} className="h-9 rounded-lg border-2 border-[#202020] bg-[#fff4c7] px-3 font-mono text-xs font-semibold text-[#202020] shadow-[1px_2px_0_#202020] hover:bg-[#fff4c7]/85">
-            {uiText[interfaceLanguage].language}: {interfaceLanguage}
-          </Button>
+        <div className="relative z-20 mb-0 flex h-9 justify-end sm:ml-[70px] sm:w-[calc(100%-70px)] sm:pr-16">
+          <div aria-label={uiText[interfaceLanguage].language} className="flex items-end gap-1">
+            {interfaceLanguages.map((language, index) => <button key={language} type="button" aria-pressed={interfaceLanguage === language} title={language} onClick={() => setInterfaceLanguage(language)} className={cn("relative h-7 min-w-16 rounded-t-md border-2 border-b-0 border-[#d1aa79] px-2 font-mono text-[11px] font-bold text-[#59422f] shadow-[2px_-2px_4px_rgba(93,59,31,0.12)] transition-all hover:-translate-y-1 sm:min-w-20", interfaceLanguageTabColors[index], interfaceLanguage === language ? "z-10 h-9 -translate-y-0.5 brightness-110" : "opacity-80")}>{language}</button>)}
+          </div>
         </div>
         <nav
           aria-label={uiText[interfaceLanguage].fileTypes}
-          className="z-30 flex shrink-0 gap-2 pb-4 sm:absolute sm:left-0 sm:top-[305px] sm:-translate-y-1/2 sm:flex-col sm:gap-3 sm:pb-0"
+          className="z-30 flex shrink-0 gap-2 pb-4 sm:absolute sm:left-0 sm:top-[305px] sm:-translate-y-1/2 sm:flex-col sm:gap-1 sm:pb-0"
         >
           {navigation.map((item) => {
             const active = activeTab === item.label
@@ -282,7 +282,7 @@ export default function Page() {
                 onClick={() => setActiveTab(item.label)}
                 aria-pressed={active}
                 className={cn(
-                  "h-10 min-w-14 rounded-[11px] border-2 border-[#202020] px-2 font-mono text-lg font-medium leading-none text-[#202020] shadow-[1px_2px_0_#202020] transition-transform hover:-translate-y-0.5 hover:bg-inherit sm:h-11 sm:min-w-[68px] sm:text-[21px]",
+                  "h-10 min-w-14 rounded-[11px] border-2 border-[#202020] px-2 font-mono text-sm font-medium leading-none text-[#202020] shadow-[1px_2px_0_#202020] transition-transform hover:-translate-y-0.5 hover:bg-inherit sm:h-11 sm:min-w-[68px] sm:rounded-l-[11px] sm:rounded-r-none sm:border-r-0 sm:text-[15px]",
                   colorClasses[item.color],
                   active && "-translate-x-1",
                 )}
@@ -294,9 +294,9 @@ export default function Page() {
           })}
         </nav>
 
-        <div className="notebook-spread relative flex w-full min-w-0 flex-1 flex-col overflow-visible rounded-[30px] drop-shadow-[12px_16px_7px_rgba(0,0,0,0.2)] sm:ml-[70px] sm:w-[calc(100%-70px)] sm:flex-none sm:flex-row">
+        <div className="notebook-spread relative flex w-full min-w-0 flex-1 flex-col overflow-visible rounded-[24px] border-[6px] border-[#4f2d2b] bg-[#6f3e35] p-2 shadow-[14px_18px_0_rgba(74,39,23,0.24)] sm:ml-[70px] sm:w-[calc(100%-70px)] sm:flex-none sm:flex-row sm:p-4">
           <NotebookPage title={uiText[interfaceLanguage].source} cues={cues} side="left" selectedRow={selectedRow} onSelect={setSelectedRow} scrollRef={sourceScrollRef} onScroll={() => syncScroll("source")} waitingText={uiText[interfaceLanguage].waiting} />
-          <NotebookPage title={targetLanguage} cues={cues} side="right" selectedRow={selectedRow} onSelect={setSelectedRow} scrollRef={translationScrollRef} onScroll={() => syncScroll("translation")} languageOpen={languageOpen} onLanguageToggle={() => setLanguageOpen((open) => !open)} onLanguageSelect={(nextLanguage) => { setTargetLanguage(nextLanguage); setLanguageOpen(false) }} waitingText={uiText[interfaceLanguage].waiting} />
+          <NotebookPage title={targetLanguage} cues={cues} side="right" selectedRow={selectedRow} onSelect={setSelectedRow} scrollRef={translationScrollRef} onScroll={() => syncScroll("translation")} onLanguageSelect={setTargetLanguage} waitingText={uiText[interfaceLanguage].waiting} />
           <NotebookBinding />
         </div>
         <div className="mt-3 flex w-full flex-col gap-3 sm:ml-[70px] sm:w-[calc(100%-70px)] sm:flex-row sm:items-center">
@@ -381,26 +381,62 @@ function StudyBackdrop() {
       <div className="absolute bottom-[-80px] right-[15%] size-48 rounded-full border-[18px] border-[#34251e]/65 bg-[#573827]/55 shadow-inner sm:size-64" />
       <div className="absolute bottom-[7%] right-[19%] h-16 w-24 rotate-[-18deg] rounded-[45%] bg-[#eee1c2]/70 shadow-[5px_7px_0_rgba(62,35,23,0.2)] sm:h-20 sm:w-32" />
       <div className="absolute bottom-[12%] left-[18%] h-3 w-36 rotate-[22deg] rounded-full bg-[#f4e0b5]/80 shadow-[0_3px_0_rgba(75,42,22,0.25)] sm:left-[22%] sm:w-52" />
+      <div className="absolute right-[4%] top-[16%] hidden h-10 w-64 rotate-[14deg] rounded border-2 border-[#694127]/60 bg-[#f5d889]/75 shadow-[5px_7px_0_rgba(74,39,23,0.2)] sm:block lg:w-80">
+        <div className="absolute inset-x-3 bottom-1 h-4 bg-[repeating-linear-gradient(90deg,transparent_0,transparent_14px,#694127_15px,#694127_16px)] opacity-55" />
+        <span className="absolute left-3 top-1 font-mono text-[9px] font-bold tracking-[0.2em] text-[#694127]/70">STUDY / 30 CM</span>
+      </div>
+      <div className="absolute bottom-[20%] left-[5%] hidden h-6 w-60 rotate-[-19deg] items-center drop-shadow-[5px_7px_0_rgba(74,39,23,0.2)] sm:flex lg:left-[9%] lg:w-72">
+        <div className="h-full w-8 rounded-l-md border-2 border-r-0 border-[#57321f] bg-[#e76f51]" />
+        <div className="h-full flex-1 border-y-2 border-[#57321f] bg-[#f2c14e] [background-image:repeating-linear-gradient(0deg,transparent_0,transparent_5px,rgba(255,255,255,0.22)_6px)]" />
+        <div className="h-0 w-0 border-y-[12px] border-l-[24px] border-y-transparent border-l-[#e8c69a]" />
+        <div className="-ml-1 h-0 w-0 border-y-[4px] border-l-[8px] border-y-transparent border-l-[#27221f]" />
+      </div>
+      <div className="absolute bottom-[8%] right-[4%] hidden h-20 w-52 rotate-[-8deg] rounded-[18px] border-4 border-[#57321f]/75 bg-[#d86f4c]/85 shadow-[8px_10px_0_rgba(74,39,23,0.22)] sm:block lg:right-[8%] lg:h-24 lg:w-64">
+        <div className="absolute inset-x-3 top-1/2 border-t-2 border-dashed border-[#f7d79c]/80" />
+        <div className="absolute right-5 top-[calc(50%-5px)] size-2 rounded-full bg-[#f7d79c]" />
+        <span className="absolute bottom-2 left-4 font-mono text-[10px] font-bold tracking-[0.24em] text-[#fff0c7]/85">PENS & NOTES</span>
+      </div>
+      <div className="absolute left-[3%] top-[12%] hidden h-28 w-40 rotate-[-12deg] sm:block lg:left-[8%] lg:h-36 lg:w-52">
+        <div className="absolute left-3 top-3 h-full w-full rounded border-2 border-[#694127]/35 bg-[#f8e8bc]/55 shadow-[5px_7px_0_rgba(74,39,23,0.12)]" />
+        <div className="absolute h-full w-full rounded border-2 border-[#694127]/55 bg-[#fff3cc]/75 shadow-[5px_7px_0_rgba(74,39,23,0.18)]">
+          <div className="absolute left-5 right-5 top-7 border-t border-dashed border-[#b77a4d]/60" />
+          <div className="absolute left-5 right-12 top-12 border-t border-dashed border-[#b77a4d]/60" />
+          <div className="absolute bottom-4 right-4 size-6 rounded-full border-2 border-[#e76f51]/60" />
+        </div>
+      </div>
     </div>
   )
 }
 
-function NotebookPage({ title, cues, side, selectedRow, onSelect, scrollRef, onScroll, languageOpen, onLanguageToggle, onLanguageSelect, waitingText }: { title: string; cues: SubtitleCue[]; side: "left" | "right"; selectedRow: number; onSelect: (row: number) => void; scrollRef: React.RefObject<HTMLDivElement | null>; onScroll: () => void; languageOpen?: boolean; onLanguageToggle?: () => void; onLanguageSelect?: (language: string) => void; waitingText: string }) {
+
+function NotebookPage({ title, cues, side, selectedRow, onSelect, scrollRef, onScroll, onLanguageSelect, waitingText }: { title: string; cues: SubtitleCue[]; side: "left" | "right"; selectedRow: number; onSelect: (row: number) => void; scrollRef: React.RefObject<HTMLDivElement | null>; onScroll: () => void; onLanguageSelect?: (language: string) => void; waitingText: string }) {
   const isLeft = side === "left"
   return (
-    <article className={cn("relative flex min-h-[520px] min-w-0 flex-1 flex-col border-2 border-[#202020] px-5 pb-5 pt-9 sm:h-[610px] sm:min-h-0 sm:px-10 sm:pt-12", isLeft ? "rounded-t-[28px] bg-[#d7c09e] sm:rounded-l-[30px] sm:rounded-r-none" : "rounded-b-[28px] bg-[#fffefe] sm:rounded-l-none sm:rounded-r-[30px] sm:pl-12")}>
-      <div className="mb-3 flex items-center gap-3"><span className="font-mono text-[13px] font-semibold uppercase tracking-[0.22em] text-[#202020]/60">{title}</span><div className="flex-1 border-t-2 border-dotted border-[#202020]/80" /></div>
-      <div ref={scrollRef} onScroll={onScroll} className="scrollbar-none flex min-h-0 flex-1 flex-col overflow-y-auto overscroll-contain pr-1">
+    <article className={cn("relative z-10 flex min-h-[520px] min-w-0 flex-1 flex-col border-2 border-[#a99579] px-5 pb-5 pt-9 shadow-[inset_0_0_22px_rgba(134,94,47,0.08)] sm:h-[610px] sm:min-h-0 sm:px-10 sm:pt-12", isLeft ? "rounded-t-[18px] bg-[#fffdf4] sm:rounded-l-[18px] sm:rounded-r-none" : "rounded-b-[18px] bg-[#f8efd9] sm:rounded-l-none sm:rounded-r-[18px] sm:pl-12")}>
+      <div aria-hidden="true" className="pointer-events-none absolute -right-3 top-3 bottom-3 z-0 w-3 rounded-r-[12px] border-y-2 border-r-2 border-[#a99579] bg-[repeating-linear-gradient(0deg,#e1d1b2_0,#e1d1b2_3px,#cdbb9c_4px,#e1d1b2_5px)] shadow-[2px_3px_0_rgba(81,43,30,0.18)]" />
+      <div aria-hidden="true" className="pointer-events-none absolute -bottom-3 left-3 right-3 z-0 h-3 rounded-b-[12px] border-x-2 border-b-2 border-[#a99579] bg-[#d6c3a3] shadow-[2px_3px_0_rgba(81,43,30,0.18)]" />
+      <div className="relative z-10 mb-3 flex items-center gap-3"><span className="font-mono text-[13px] font-semibold uppercase tracking-[0.22em] text-[#202020]/60">{title}</span><div className="flex-1 border-t-2 border-dotted border-[#202020]/80" /></div>
+      <div ref={scrollRef} onScroll={onScroll} className="relative z-10 scrollbar-none flex min-h-0 flex-1 flex-col overflow-y-auto overscroll-contain pr-1">
         {cues.map((cue, index) => <button key={cue.id} type="button" onClick={() => onSelect(index)} className={cn("flex min-h-[52px] w-full shrink-0 flex-col justify-center overflow-hidden border-b border-[#202020]/45 px-0.5 text-left font-mono text-[13px] leading-tight transition-colors sm:text-[15px]", selectedRow === index ? "bg-white/25" : "hover:bg-white/20")}><span className="mb-1 text-[10px] text-[#202020]/55">{cue.id}{cue.start && cue.end ? ` · ${cue.start} → ${cue.end}` : ""}</span><span className="whitespace-pre-wrap">{isLeft ? cue.text : cue.translation || waitingText}</span></button>)}
       </div>
-      {!isLeft && <LanguagePicker title={title} open={languageOpen} onToggle={onLanguageToggle} onSelect={onLanguageSelect} />}
+      {!isLeft && <LanguageBookmarks selected={title} onSelect={onLanguageSelect} />}
     </article>
   )
 }
 
-function LanguagePicker({ title, open, onToggle, onSelect }: { title: string; open?: boolean; onToggle?: () => void; onSelect?: (language: string) => void }) {
-  return <div className="absolute -right-2 -top-5 z-30 sm:-right-8 sm:-top-7"><Button type="button" variant="ghost" onClick={onToggle} aria-expanded={open} className="h-14 rotate-[-17deg] rounded-[13px] border-2 border-[#202020] bg-[#ffeb9b] px-4 font-mono text-[15px] font-semibold text-[#202020] shadow-[1px_2px_0_#202020] hover:bg-[#ffeb9b] sm:h-16 sm:px-6 sm:text-[17px]">{title}</Button>{open && <div className="absolute right-0 top-12 flex rotate-[-17deg] flex-col overflow-hidden rounded-lg border-2 border-[#202020] bg-[#fff8c9] text-sm shadow-[2px_3px_0_#202020]">{languages.map((option) => <button key={option} type="button" onClick={() => onSelect?.(option)} className="px-4 py-2 text-left font-mono hover:bg-[#ffed9e]">{option}</button>)}</div>}</div>
+const languageBookmarkStyles = [
+  { color: "bg-[#59b77d]", short: "EN" },
+  { color: "bg-[#69c78c]", short: "日" },
+  { color: "bg-[#f0a148]", short: "한" },
+  { color: "bg-[#ef8739]", short: "FR" },
+  { color: "bg-[#df4050]", short: "DE" },
+  { color: "bg-[#c93249]", short: "ΕΛ" },
+] as const
+
+function LanguageBookmarks({ selected, onSelect }: { selected: string; onSelect?: (language: string) => void }) {
+  return <div aria-label="翻译语言" className="absolute right-1 top-24 z-30 flex -translate-y-1/2 flex-col gap-0.5 sm:-right-[58px] sm:top-1/2 sm:translate-y-[-50%]">{languages.map((language, index) => { const bookmark = languageBookmarkStyles[index]!; const isSelected = selected === language; return <button key={language} type="button" aria-label={`选择${language}`} aria-pressed={isSelected} onClick={() => onSelect?.(language)} className={cn("group relative flex h-10 w-14 shrink-0 items-center justify-center overflow-hidden rounded-r-[10px] border-2 border-l-0 border-[#8b6047] px-1 shadow-[2px_2px_0_rgba(81,43,30,0.25)] transition-transform hover:translate-x-1 sm:h-11 sm:w-[62px] sm:rounded-r-[9px]", bookmark.color, isSelected && "translate-x-1 brightness-110 ring-2 ring-[#fff5c9] ring-offset-1 ring-offset-[#6f3e35]")}><span aria-hidden="true" className="font-mono text-[10px] font-bold tracking-tight text-white drop-shadow-[0_1px_1px_rgba(81,43,30,0.38)] sm:text-[11px]">{bookmark.short}</span><span className="sr-only">{language}</span></button> })}</div>
 }
+
 
 function NotebookBinding() {
   return <div aria-hidden="true" className="pointer-events-none absolute left-0 right-0 top-1/2 z-20 h-8 -translate-y-1/2 sm:bottom-0 sm:left-1/2 sm:right-auto sm:top-0 sm:h-auto sm:w-12 sm:-translate-x-1/2 sm:translate-y-0"><div className="absolute inset-x-0 top-1/2 border-t-2 border-[#202020]/35 sm:inset-y-0 sm:inset-x-auto sm:left-1/2 sm:w-px sm:-translate-x-1/2 sm:border-l-2 sm:border-t-0 sm:border-[#202020]/25" /><div className="relative flex h-full w-full justify-around px-4 sm:flex-col sm:justify-between sm:px-0 sm:py-4">{Array.from({ length: 16 }, (_, index) => <span key={index} className="h-3 w-7 rounded-full border-2 border-[#777] bg-gradient-to-b from-[#f5f5f5] via-[#a7a7a7] to-[#f8f8f8] shadow-[0_1px_1px_rgba(0,0,0,0.35)] sm:h-3 sm:w-8" />)}</div></div>
