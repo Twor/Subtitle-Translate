@@ -32,9 +32,12 @@ function getCompletionContent(value: unknown): string | undefined {
   return getString(firstChoice.message.content)
 }
 
-function getTranslations(value: unknown): unknown[] | undefined {
-  if (!isRecord(value) || !Array.isArray(value.translations)) return undefined
-  return value.translations
+function getTranslations(value: unknown, expectedCount: number): unknown[] | undefined {
+  if (!isRecord(value)) return undefined
+  const translations = value.translations
+  if (Array.isArray(translations)) return translations
+  if (!isRecord(translations)) return undefined
+  return Array.from({ length: expectedCount }, (_, index) => translations[String(index + 1)])
 }
 
 export async function POST(request: Request) {
@@ -63,7 +66,7 @@ export async function POST(request: Request) {
       )
     }
 
-    const sourceLines = cues.map((cue, index) => {
+    const sourceItems = cues.map((cue, index) => {
       if (!isRecord(cue)) {
         throw new Error(`第 ${index + 1} 条字幕格式无效`)
       }
@@ -71,9 +74,9 @@ export async function POST(request: Request) {
       if (!text) {
         throw new Error(`第 ${index + 1} 条字幕没有文本`)
       }
-      return `${index + 1}. ${text}`
+      return { number: index + 1, text }
     })
-    const sourceText = sourceLines.join("\n")
+    const sourceText = JSON.stringify(sourceItems)
     if (sourceText.length > MAX_TEXT_LENGTH) {
       return Response.json({ error: "字幕内容过长，请分段翻译" }, { status: 400 })
     }
@@ -89,7 +92,7 @@ export async function POST(request: Request) {
         messages: [
           {
             role: "system",
-            content: `${getTranslationPrompt()}\n\nAdditional output requirements: Translate subtitle text into ${targetLanguage}. Return valid JSON only in the form {"translations":["..."]}. Keep exactly ${cues.length} items, preserve the numbering order, and do not add explanations. Preserve line breaks inside each subtitle when useful.`,
+            content: `${getTranslationPrompt()}\n\nAdditional output requirements: Translate subtitle text into ${targetLanguage}. Return valid JSON only in the form {"translations":{"1":"...","2":"..."}}. The translations object must contain every numbered key from 1 through ${cues.length}, with exactly one translated string per key. Preserve the numbering order, do not add explanations, and preserve line breaks inside each subtitle when useful.`,
           },
           { role: "user", content: sourceText },
         ],
@@ -113,7 +116,7 @@ export async function POST(request: Request) {
       return Response.json({ error: "DeepSeek 没有返回翻译结果" }, { status: 502 })
     }
 
-    const translations = getTranslations(JSON.parse(content))
+    const translations = getTranslations(JSON.parse(content), cues.length)
     if (
       !translations ||
       translations.length !== cues.length ||
