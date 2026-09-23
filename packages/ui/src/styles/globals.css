@@ -138,3 +138,20 @@
     display: none;
   }
 }
+
+@keyframes api-key-shake {
+  0%,
+  100% {
+    transform: translateX(0);
+  }
+  25% {
+    transform: translateX(-3px);
+  }
+  75% {
+    transform: translateX(3px);
+  }
+}
+
+@utility animate-api-key-shake {
+  animation: api-key-shake 280ms ease-in-out;
+}
