@@ -9,7 +9,7 @@
     },
     "lint": {
       "dependsOn": ["^lint"],
-      "env": ["DEEPSEEK_API_KEY", "DEEPSEEK_TRANSLATION_PROMPT", "NEXT_PUBLIC_DEEPSEEK_TRANSLATION_PROMPT"]
+      "env": ["NEXT_PUBLIC_DEEPSEEK_TRANSLATION_PROMPT"]
     },
     "format": {
       "dependsOn": ["^format"]

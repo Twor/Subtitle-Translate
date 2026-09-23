@@ -14,10 +14,6 @@ type SubtitleCue = {
   translations?: Record<string, string>
 }
 
-type TranslateResponse = {
-  translations?: string[]
-  error?: string | { message?: string }
-}
 type BrowserDeepSeekResponse = {
   choices?: Array<{ message?: { content?: string } }>
   error?: { message?: string }
@@ -367,22 +363,15 @@ export default function Page() {
         temperature: 0.2,
         stream: false,
       }
-      const response = pageApiKey.trim()
-        ? await fetch("https://api.deepseek.com/chat/completions", {
-            method: "POST",
-            headers: { "Content-Type": "application/json", Authorization: `Bearer ${pageApiKey.trim()}` },
-            body: JSON.stringify(requestBody),
-          })
-        : await fetch("/api/translate", {
-            method: "POST",
-            headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({ targetLanguage, cues: cues.map(({ id, start, end, text }) => ({ id, start, end, text })) }),
-          })
-      const payload = (await response.json()) as TranslateResponse & BrowserDeepSeekResponse
-      const translations = pageApiKey.trim() ? parseBrowserTranslations(payload, cues.length) : payload.translations
+      const response = await fetch("https://api.deepseek.com/chat/completions", {
+        method: "POST",
+        headers: { "Content-Type": "application/json", Authorization: `Bearer ${pageApiKey.trim()}` },
+        body: JSON.stringify(requestBody),
+      })
+      const payload = (await response.json()) as BrowserDeepSeekResponse
+      const translations = parseBrowserTranslations(payload, cues.length)
       if (!response.ok || !translations) {
-        const errorMessage = typeof payload.error === "string" ? payload.error : payload.error?.message
-        throw new Error(errorMessage || "翻译失败")
+        throw new Error(payload.error?.message || "翻译失败")
       }
       setCues((current) => current.map((cue, index) => ({ ...cue, translation: translations[index] ?? "", translations: { ...cue.translations, [targetLanguage]: translations[index] ?? "" } })))
       setMessage({ type: "translated", count: cues.length, language: targetLanguage })

@@ -1,6 +1,8 @@
 # Subtitle Translate
 
-一个基于 Next.js、React、Tailwind CSS 和 shadcn/ui 的字幕翻译工作台。支持导入字幕、选择目标语言、调用 DeepSeek 翻译，并导出翻译后的字幕文件。
+一个基于 Next.js、React、Tailwind CSS 和 shadcn/ui 的字幕翻译工作台。支持导入字幕、选择目标语言、在浏览器中调用 DeepSeek 翻译，并导出翻译后的字幕文件。
+
+本项目支持以静态站点形式部署到 GitHub Pages。
 
 ## 预览
 
@@ -12,7 +14,7 @@
 - 保留 SRT 时间轴并编辑原文与译文
 - 支持 English、中文、日本語、한국어、Français、Deutsch、Ελληνικά
 - 中文 / English 界面切换
-- 使用 DeepSeek 生成字幕翻译
+- 使用 DeepSeek 生成字幕翻译（浏览器直连）
 - 自动保存当前工作区
 - 导出 `.srt` 或 `.txt` 文件
 - 浏览器内输入 DeepSeek API Key，不写入项目文件
@@ -65,7 +67,6 @@ bun run format     # 格式化代码
 ```text
 apps/web/
 ├── app/
-│   ├── api/translate/  # DeepSeek 服务端翻译接口
 │   ├── page.tsx        # 字幕翻译工作台
 │   └── layout.tsx      # 应用布局
 ├── public/
@@ -74,3 +75,13 @@ apps/web/
 
 packages/ui/             # 共享 shadcn/ui 组件与样式
 ```
+
+## 部署到 GitHub Pages
+
+推送到 `main` 后，`.github/workflows/deploy-pages.yml` 会自动构建并发布静态站点。
+
+首次启用时，在仓库的 **Settings → Pages → Build and deployment** 中将 **Source** 设置为 **GitHub Actions**。
+
+网站地址：<https://twor.github.io/Subtitle-Translate/>
+
+GitHub Pages 只能托管静态文件，因此翻译功能使用页面中的 DeepSeek API Key 从浏览器直连 DeepSeek。API Key 仅保存在当前浏览器会话中，不会写入仓库或构建产物。
