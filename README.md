@@ -82,6 +82,6 @@ packages/ui/             # 共享 shadcn/ui 组件与样式
 
 首次启用时，在仓库的 **Settings → Pages → Build and deployment** 中将 **Source** 设置为 **GitHub Actions**。
 
-网站地址：<https://twor.github.io/Subtitle-Translate/>
+默认项目站点地址：<https://twor.github.io/Subtitle-Translate/>。如果仓库配置了自定义域名，请以 **Settings → Pages** 中显示的地址为准。
 
 GitHub Pages 只能托管静态文件，因此翻译功能使用页面中的 DeepSeek API Key 从浏览器直连 DeepSeek。API Key 仅保存在当前浏览器会话中，不会写入仓库或构建产物。
