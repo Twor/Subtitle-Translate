@@ -229,7 +229,11 @@ function getTranslation(cue: SubtitleCue, language: string): string {
   return cue.translations?.[language] || (language === "English" ? cue.translation : "")
 }
 function normalizePageApiKey(value: string): string {
-  return value.trim().replace(/^["'`]|["'`]$/g, "").trim().replace(/^Bearer\s+/i, "").trim()
+ let key = value.normalize("NFKC").replace(/[\u200B-\u200D\u2060\uFEFF]/g, "").trim()
+ key = key.replace(/^["'`]+|["'`]+$/g, "").trim()
+ key = key.replace(/^Bearer\s+/i, "").trim()
+ key = key.replace(/^["'`]+|["'`]+$/g, "").trim()
+ return key.replace(/\s+/g, "")
 }
 
 export default function Page() {
@@ -341,7 +345,7 @@ export default function Page() {
     setMessage({ type: "fileRemoved" })
   }
   async function translateSubtitles() {
-    const apiKey = normalizePageApiKey(pageApiKey)
+    const apiKey = normalizePageApiKey(apiKeyInputRef.current?.value || pageApiKey)
     if (!apiKey) {
       setError({ type: "missingApiKey" })
       setMessage(null)
