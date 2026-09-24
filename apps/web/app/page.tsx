@@ -121,7 +121,7 @@ const uiText = {
     fileTypes: "文件类型",
     source: "原文",
     apiKey: "DeepSeek API Key:",
-    apiKeyPlaceholder: "不会保存和上传API Key，仅在浏览器直连 DeepSeek",
+    apiKeyPlaceholder: "仅暂存在当前浏览器会话，翻译请求会发送给 DeepSeek",
     browserDirect: "浏览器直连",
     upload: "上传 SRT / TXT",
     chooseFile: "选择字幕文件",
@@ -142,10 +142,14 @@ const uiText = {
       storage: "无法保存当前工作状态",
       missingApiKey: "请先填写 DeepSeek API Key",
       invalidApiKey: "DeepSeek API Key 无效或已失效，请重新粘贴 sk- 开头的 Key",
+      insufficientBalance: "DeepSeek 账户余额不足，请充值后重试",
+      rateLimited: "DeepSeek 请求过于频繁，请稍后再试",
+      serviceUnavailable: "DeepSeek 服务暂不可用，请稍后再试",
+      invalidRequest: (status: number) => `DeepSeek 拒绝了翻译请求（HTTP ${status}），请检查请求参数后重试`,
       invalidFile: "请选择 .srt 或 .txt 格式的字幕文件",
       readFile: "无法读取字幕文件",
       parseFile: (extension: string) => `${extension.toUpperCase()} 文件解析失败`,
-      translation: "翻译失败，请检查 API Key、账户余额和网络连接",
+      translation: "翻译失败，请检查网络连接或 DeepSeek 服务状态",
       noTranslation: "请先完成翻译，再下载字幕",
     },
   },
@@ -174,10 +178,14 @@ const uiText = {
       storage: "Unable to save the current workspace",
       missingApiKey: "Enter your DeepSeek API key before translating",
       invalidApiKey: "This DeepSeek API key is invalid or expired. Paste a current key beginning with sk-",
+      insufficientBalance: "Your DeepSeek account has insufficient balance. Top up and try again",
+      rateLimited: "DeepSeek is receiving requests too quickly. Wait a moment and try again",
+      serviceUnavailable: "DeepSeek is temporarily unavailable. Try again shortly",
+      invalidRequest: (status: number) => `DeepSeek rejected the translation request (HTTP ${status}). Check the request and try again`,
       invalidFile: "Choose an .srt or .txt subtitle file",
       readFile: "Unable to read the subtitle file",
       parseFile: (extension: string) => `Unable to parse the ${extension.toUpperCase()} file`,
-      translation: "Translation failed. Check the API key, account balance, and network connection",
+      translation: "Translation failed. Check your network connection or DeepSeek service status",
       noTranslation: "Complete the translation before downloading subtitles",
     },
   },
@@ -197,8 +205,13 @@ type ErrorMessage =
   | { type: "parseFile"; extension: string }
   | { type: "translation" }
   | { type: "invalidApiKey" }
+  | { type: "insufficientBalance" }
+  | { type: "rateLimited" }
+  | { type: "serviceUnavailable" }
+  | { type: "invalidRequest"; status: number }
   | { type: "missingApiKey" }
   | { type: "noTranslation" }
+
 function getStatusText(message: StatusMessage, language: keyof typeof uiText): string {
   const status = uiText[language].status
   if (message.type === "exampleLoaded") return status.exampleLoaded
@@ -215,10 +228,13 @@ function getErrorText(error: ErrorMessage, language: keyof typeof uiText): strin
   if (error.type === "readFile") return errors.readFile
   if (error.type === "parseFile") return errors.parseFile(error.extension)
   if (error.type === "invalidApiKey") return errors.invalidApiKey
+  if (error.type === "insufficientBalance") return errors.insufficientBalance
+  if (error.type === "rateLimited") return errors.rateLimited
+  if (error.type === "serviceUnavailable") return errors.serviceUnavailable
+  if (error.type === "invalidRequest") return errors.invalidRequest(error.status)
   if (error.type === "missingApiKey") return errors.missingApiKey
   return errors.translation
 }
-
 function restoreCue(cue: SubtitleCue): SubtitleCue {
   if (cue.translations) return cue
   const demoCue = demoCues.find((candidate) => candidate.id === cue.id && candidate.text === cue.text)
@@ -387,7 +403,26 @@ export default function Page() {
         setMessage(null)
         return
       }
-      if (!response.ok) throw new Error(payload.error?.message || "翻译失败")
+      if (response.status === 402) {
+        setError({ type: "insufficientBalance" })
+        setMessage(null)
+        return
+      }
+      if (response.status === 429) {
+        setError({ type: "rateLimited" })
+        setMessage(null)
+        return
+      }
+      if (response.status >= 500) {
+        setError({ type: "serviceUnavailable" })
+        setMessage(null)
+        return
+      }
+      if (!response.ok) {
+        setError({ type: "invalidRequest", status: response.status })
+        setMessage(null)
+        return
+      }
       const translations = parseBrowserTranslations(payload, cues.length)
       if (!translations) throw new Error("翻译失败")
       setCues((current) => current.map((cue, index) => ({ ...cue, translation: translations[index] ?? "", translations: { ...cue.translations, [targetLanguage]: translations[index] ?? "" } })))
