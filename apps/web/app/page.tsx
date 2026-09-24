@@ -141,10 +141,11 @@ const uiText = {
     errors: {
       storage: "无法保存当前工作状态",
       missingApiKey: "请先填写 DeepSeek API Key",
+      invalidApiKey: "DeepSeek API Key 无效或已失效，请重新粘贴 sk- 开头的 Key",
       invalidFile: "请选择 .srt 或 .txt 格式的字幕文件",
       readFile: "无法读取字幕文件",
       parseFile: (extension: string) => `${extension.toUpperCase()} 文件解析失败`,
-      translation: "翻译失败",
+      translation: "翻译失败，请检查 API Key、账户余额和网络连接",
       noTranslation: "请先完成翻译，再下载字幕",
     },
   },
@@ -172,14 +173,16 @@ const uiText = {
     errors: {
       storage: "Unable to save the current workspace",
       missingApiKey: "Enter your DeepSeek API key before translating",
+      invalidApiKey: "This DeepSeek API key is invalid or expired. Paste a current key beginning with sk-",
       invalidFile: "Choose an .srt or .txt subtitle file",
       readFile: "Unable to read the subtitle file",
       parseFile: (extension: string) => `Unable to parse the ${extension.toUpperCase()} file`,
-      translation: "Translation failed",
+      translation: "Translation failed. Check the API key, account balance, and network connection",
       noTranslation: "Complete the translation before downloading subtitles",
     },
   },
 } as const
+
 type StatusMessage =
   | { type: "exampleLoaded" }
   | { type: "restored" }
@@ -193,9 +196,9 @@ type ErrorMessage =
   | { type: "readFile" }
   | { type: "parseFile"; extension: string }
   | { type: "translation" }
+  | { type: "invalidApiKey" }
   | { type: "missingApiKey" }
   | { type: "noTranslation" }
-
 function getStatusText(message: StatusMessage, language: keyof typeof uiText): string {
   const status = uiText[language].status
   if (message.type === "exampleLoaded") return status.exampleLoaded
@@ -211,6 +214,7 @@ function getErrorText(error: ErrorMessage, language: keyof typeof uiText): strin
   if (error.type === "invalidFile") return errors.invalidFile
   if (error.type === "readFile") return errors.readFile
   if (error.type === "parseFile") return errors.parseFile(error.extension)
+  if (error.type === "invalidApiKey") return errors.invalidApiKey
   if (error.type === "missingApiKey") return errors.missingApiKey
   return errors.translation
 }
@@ -223,6 +227,9 @@ function restoreCue(cue: SubtitleCue): SubtitleCue {
 
 function getTranslation(cue: SubtitleCue, language: string): string {
   return cue.translations?.[language] || (language === "English" ? cue.translation : "")
+}
+function normalizePageApiKey(value: string): string {
+  return value.trim().replace(/^["'`]|["'`]$/g, "").trim().replace(/^Bearer\s+/i, "").trim()
 }
 
 export default function Page() {
@@ -334,7 +341,8 @@ export default function Page() {
     setMessage({ type: "fileRemoved" })
   }
   async function translateSubtitles() {
-    if (!pageApiKey.trim()) {
+    const apiKey = normalizePageApiKey(pageApiKey)
+    if (!apiKey) {
       setError({ type: "missingApiKey" })
       setMessage(null)
       setApiKeyShake(true)
@@ -343,6 +351,7 @@ export default function Page() {
       return
     }
     if (cues.length === 0) return
+
     setLoading(true)
     setError(null)
     try {
@@ -365,14 +374,18 @@ export default function Page() {
       }
       const response = await fetch("https://api.deepseek.com/chat/completions", {
         method: "POST",
-        headers: { "Content-Type": "application/json", Authorization: `Bearer ${pageApiKey.trim()}` },
+        headers: { "Content-Type": "application/json", Authorization: `Bearer ${apiKey}` },
         body: JSON.stringify(requestBody),
       })
       const payload = (await response.json()) as BrowserDeepSeekResponse
-      const translations = parseBrowserTranslations(payload, cues.length)
-      if (!response.ok || !translations) {
-        throw new Error(payload.error?.message || "翻译失败")
+      if (response.status === 401) {
+        setError({ type: "invalidApiKey" })
+        setMessage(null)
+        return
       }
+      if (!response.ok) throw new Error(payload.error?.message || "翻译失败")
+      const translations = parseBrowserTranslations(payload, cues.length)
+      if (!translations) throw new Error("翻译失败")
       setCues((current) => current.map((cue, index) => ({ ...cue, translation: translations[index] ?? "", translations: { ...cue.translations, [targetLanguage]: translations[index] ?? "" } })))
       setMessage({ type: "translated", count: cues.length, language: targetLanguage })
     } catch (translateError) {
